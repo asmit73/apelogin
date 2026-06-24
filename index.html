@@ -1,1 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ApexQ Inspector</title>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@700&display=swap" rel="stylesheet"/>
+<style>
+/* ── TOKENS ── */
+:root {
+  --bg:       #0a0a0a;
+  --bg2:      #111;
+  --bg3:      #181818;
+  --bg4:      #1f1f1f;
+  --gold:     #c8a84b;
+  --gold-lt:  #e6c96a;
+  --gold-dim: rgba(200,168,75,0.10);
+  --red:      #c0392b;
+  --green:    #27ae60;
+  --green-dim:rgba(39,174,96,0.12);
+  --red-dim:  rgba(192,57,43,0.12);
+  --orange:   #e67e22;
+  --border:   rgba(200,168,75,0.15);
+  --border2:  rgba(255,255,255,0.07);
+  --text:     #bbb;
+  --muted:    #555;
+  --white:    #fff;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Roboto',sans-serif;background:var(--bg);color:var(--white);font-size:14px;line-height:1.5}
+::-webkit-scrollbar{width:4px}::-webkit-scrollbar-track{background:var(--bg2)}::-webkit-scrollbar-thumb{background:var(--gold);border-radius:2px}
 
+/* ── SCREEN SYSTEM ── */
+.screen{display:none;min-height:100vh;flex-direction:column}
+.screen.active{display:flex}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.fade-up{animation:fadeUp .25s ease both}
+
+/* ── TOPBAR ── */
+.topbar{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;height:56px;background:rgba(10,10,10,.97);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;flex-shrink:0;
+}
+.tb-logo{display:flex;align-items:center;gap:9px;cursor:pointer}
+.tb-mark{width:32px;height:32px;border-radius:5px;background:linear-gradient(135deg,var(--red),#7a1209);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Roboto Condensed',sans-serif;font-size:12px;font-weight:700;color:var(--gold)}
+.tb-name{font-size:13px;font-weight:700;letter-spacing:.05em;text-transform:uppercase}
+.tb-sub{font-size:8px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase;display:block;line-height:1}
+.tb-right{display:flex;align-items:center;gap:12px}
+.tb-user{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--text)}
+.tb-avatar{width:28px;height:28px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--gold)}
+.tb-badge{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:3px 10px;border-radius:20px;border:1px solid}
+.tb-badge.admin-badge{color:var(--gold);border-color:var(--border);background:var(--gold-dim)}
+.tb-badge.insp-badge{color:#7ec8e3;border-color:rgba(126,200,227,.3);background:rgba(126,200,227,.08)}
+.tb-logout{background:none;border:1px solid var(--border2);border-radius:4px;color:var(--muted);
+  font-size:11px;padding:5px 12px;cursor:pointer;transition:all .18s;font-family:'Roboto',sans-serif}
+.tb-logout:hover{border-color:var(--border);color:var(--white)}
+
+/* ── SIDEBAR ── */
+.app-layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;background:var(--bg2);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;padding:16px 0;flex-shrink:0;overflow-y:auto}
+.sb-group{font-size:9px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);padding:0 18px;margin:14px 0 6px}
+.sb-group:first-child{margin-top:0}
+.sb-item{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;
+  border-left:2px solid transparent;font-size:13px;color:var(--text);transition:all .16s;border-right:none}
+.sb-item:hover{background:rgba(255,255,255,.04);color:var(--white)}
+.sb-item.active{background:var(--gold-dim);border-left-color:var(--gold);color:var(--gold);font-weight:600}
+.sb-icon{font-size:14px;width:18px;text-align:center;flex-shrink:0}
+.sb-divider{height:1px;background:var(--border2);margin:10px 18px}
+
+/* ── MAIN CONTENT ── */
+.main{flex:1;overflow-y:auto;padding:28px 32px}
+.page{display:none}
+.page.active{display:block;animation:fadeUp .2s ease}
+
+/* ── TYPOGRAPHY ── */
+.page-title{font-family:'Roboto Condensed',sans-serif;font-size:22px;font-weight:700;margin-bottom:4px}
+.page-sub{font-size:13px;color:var(--text);font-weight:300;margin-bottom:24px}
+.eyebrow{font-size:9px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:6px}
+
+/* ── STAT CARDS ── */
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.stat-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:20px;position:relative;overflow:hidden;transition:border-color .2s}
+.stat-card:hover{border-color:var(--border)}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--gold);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.stat-card:hover::before{transform:scaleX(1)}
+.stat-num{font-family:'Roboto Condensed',sans-serif;font-size:30px;font-weight:700;color:var(--gold);line-height:1}
+.stat-label{font-size:11px;color:var(--muted);margin-top:5px;text-transform:uppercase;letter-spacing:.08em}
+.stat-icon{position:absolute;right:18px;top:18px;font-size:22px;opacity:.25}
+  /* ── TABLE ── */
+.table-wrap{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;overflow:hidden;margin-bottom:24px}
+.table-head{display:flex;padding:10px 18px;background:var(--bg2);border-bottom:1px solid var(--border2)}
+.th{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.table-row{display:flex;align-items:center;padding:13px 18px;border-bottom:1px solid var(--border2);cursor:pointer;transition:background .16s}
+.table-row:last-child{border-bottom:none}
+.table-row:hover{background:rgba(255,255,255,.03)}
+.td{font-size:13px;color:var(--text)}
+.td.white{color:var(--white);font-weight:500}
+.col-1{flex:2}.col-2{flex:1.5}.col-3{flex:1}.col-4{flex:1}.col-5{flex:1}
+
+/* ── STATUS PILLS ── */
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:700;
+  letter-spacing:.08em;text-transform:uppercase;padding:3px 10px;border-radius:20px;border:1px solid}
+.pill.draft{color:var(--muted);border-color:var(--border2);background:rgba(255,255,255,.04)}
+.pill.assigned{color:#7ec8e3;border-color:rgba(126,200,227,.3);background:rgba(126,200,227,.08)}
+.pill.in_progress{color:var(--orange);border-color:rgba(230,126,34,.35);background:rgba(230,126,34,.1)}
+.pill.completed{color:var(--green);border-color:rgba(39,174,96,.35);background:var(--green-dim)}
+.pill::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ── FORMS ── */
+.form-card{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:28px;max-width:700px;margin-bottom:24px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px}
+.form-full{margin-bottom:16px}
+.field{display:flex;flex-direction:column;gap:5px}
+.field label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.field input,.field select,.field textarea{
+  background:var(--bg2);border:1px solid rgba(255,255,255,.1);border-radius:6px;
+  color:var(--white);font-family:'Roboto',sans-serif;font-size:13px;font-weight:300;
+  padding:10px 13px;outline:none;transition:border-color .2s;width:100%}
+.field input::placeholder,.field textarea::placeholder{color:#444}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold)}
+.field select option{background:#1a1a1a}
+
+/* ── BUTTONS ── */
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 20px;border-radius:6px;
+  font-family:'Roboto',sans-serif;font-size:13px;font-weight:700;cursor:pointer;border:none;transition:all .18s}
+.btn-gold{background:var(--gold);color:#000}.btn-gold:hover{background:var(--gold-lt);transform:translateY(-1px)}
+.btn-outline{background:transparent;color:var(--text);border:1px solid var(--border2)}.btn-outline:hover{border-color:var(--border);color:var(--white)}
+.btn-ghost{background:transparent;color:var(--muted);border:none}.btn-ghost:hover{color:var(--white)}
+.btn-red{background:var(--red);color:#fff}.btn-red:hover{background:#a93226}
+.btn-green{background:var(--green);color:#fff}.btn-green:hover{background:#219a52}
+.btn-sm{padding:7px 14px;font-size:12px}
+
+/* ── CHECKLIST ── */
+.checklist-layout{display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start}
+.section-nav{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:16px;position:sticky;top:24px}
+.section-nav-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.sec-nav-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:6px;cursor:pointer;transition:background .16s;font-size:13px;color:var(--text)}
+.sec-nav-item.active{background:var(--gold-dim);color:var(--gold)}
+.sec-nav-item.done{color:var(--green)}
+.sec-dot{width:8px;height:8px;border-radius:50%;border:1.5px solid var(--muted);flex-shrink:0;transition:all .2s}
+.sec-nav-item.done .sec-dot{background:var(--green);border-color:var(--green)}
+.sec-nav-item.active .sec-dot{border-color:var(--gold);background:var(--gold)}
+
+.section-panel{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:24px;margin-bottom:16px}
+.section-panel-title{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-panel-title::after{content:'';flex:1;height:1px;background:var(--border2)}
+
+.q-card{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:18px;margin-bottom:12px}
+.q-card:last-child{margin-bottom:0}
+.q-text{font-size:13.5px;font-weight:500;color:var(--white);margin-bottom:14px}
+.pass-fail{display:flex;gap:10px;margin-bottom:12px}
+.pf-btn{flex:1;padding:10px;border-radius:6px;border:1.5px solid rgba(255,255,255,.1);
+  font-family:'Roboto',sans-serif;font-size:13px;font-weight:600;cursor:pointer;
+  background:transparent;color:var(--text);transition:all .18s;display:flex;align-items:center;justify-content:center;gap:6px}
+.pf-btn:hover.pass-opt{border-color:var(--green);color:var(--green)}
+.pf-btn:hover.fail-opt{border-color:var(--red);color:#e74c3c}
+.pf-btn.sel-pass{background:var(--green-dim);border-color:var(--green);color:var(--green)}
+.pf-btn.sel-fail{background:var(--red-dim);border-color:var(--red);color:#e74c3c}
+.q-meta{display:flex;gap:10px;flex-wrap:wrap;margin-top:4px}
+.photo-upload-btn{display:flex;align-items:center;gap:6px;padding:8px 14px;border-radius:5px;
+  background:var(--bg3);border:1px dashed var(--border);color:var(--muted);cursor:pointer;
+  font-size:12px;font-weight:500;transition:all .18s;position:relative}
+.photo-upload-btn:hover{border-color:var(--gold);color:var(--gold)}
+.photo-upload-btn input{position:absolute;inset:0;opacity:0;cursor:pointer}
+.comment-input{flex:1;min-width:200px;background:var(--bg3);border:1px solid rgba(255,255,255,.08);border-radius:5px;
+  color:var(--white);font-family:'Roboto',sans-serif;font-size:12.5px;font-weight:300;
+  padding:8px 12px;outline:none;transition:border-color .2s}
+.comment-input:focus{border-color:var(--gold)}
+.comment-input::placeholder{color:#444}
+.thumb-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.thumb{width:56px;height:56px;border-radius:5px;object-fit:cover;border:1px solid var(--border);cursor:pointer}
+.req-tag{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;
+  padding:2px 8px;border-radius:10px;color:var(--orange);background:rgba(230,126,34,.1);border:1px solid rgba(230,126,34,.25)}
+
+/* ── PROGRESS BAR ── */
+.progress-bar-wrap{background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:16px 20px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
+.progress-bar-bg{flex:1;height:8px;background:rgba(255,255,255,.07);border-radius:4px;overflow:hidden}
+.progress-bar-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,var(--red),var(--gold));transition:width .4s ease}
+.progress-pct{font-size:13px;font-weight:700;color:var(--gold);min-width:36px;text-align:right}
+.progress-label{font-size:12px;color:var(--muted)}
+
+/* ── REVIEW PAGE ── */
+.review-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.review-item{display:flex;align-items:center;gap:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:14px 16px}
+.ri-icon{font-size:18px;flex-shrink:0}
+.ri-section{font-size:12px;color:var(--muted);font-weight:400}
+.ri-q{font-size:13px;color:var(--white);font-weight:500}
+.ri-status{margin-left:auto;font-size:11px;font-weight:700;padding:3px 10px;border-radius:10px;border:1px solid;flex-shrink:0}
+.ri-pass{color:var(--green);border-color:rgba(39,174,96,.4);background:var(--green-dim)}
+.ri-fail{color:#e74c3c;border-color:rgba(192,57,43,.4);background:var(--red-dim)}
+.ri-pending{color:var(--muted);border-color:var(--border2);background:rgba(255,255,255,.04)}
+  /* ── REPORT ── */
+.report-header-card{background:var(--bg3);border:1px solid var(--border);border-radius:10px;padding:26px;margin-bottom:18px;position:relative;overflow:hidden}
+.report-header-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold))}
+.report-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:18px}
+.report-block{background:var(--bg3);border:1px solid var(--border2);border-radius:8px;padding:18px}
+.report-block h4{font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.r-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.r-row:last-child{border-bottom:none}
+.r-key{font-size:12.5px;color:var(--text)}
+.r-val{font-size:12.5px;font-weight:600;color:var(--white)}
+.verdict-card{border-radius:10px;padding:24px;text-align:center;margin-bottom:18px}
+.verdict-card.pass{background:rgba(39,174,96,.1);border:2px solid rgba(39,174,96,.4)}
+.verdict-card.fail{background:rgba(192,57,43,.1);border:2px solid rgba(192,57,43,.4)}
+.verdict-icon{font-size:40px;margin-bottom:8px}
+.verdict-text{font-family:'Roboto Condensed',sans-serif;font-size:28px;font-weight:700}
+.verdict-text.pass{color:var(--green)}
+.verdict-text.fail{color:#e74c3c}
+.verdict-sub{font-size:12px;color:var(--text);margin-top:4px}
+.report-photos{display:flex;flex-wrap:wrap;gap:10px}
+.report-photo{width:90px;height:90px;object-fit:cover;border-radius:7px;border:1px solid var(--border);cursor:pointer}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--bg4);border:1px solid var(--border);
+  border-radius:8px;padding:14px 20px;font-size:13px;color:var(--white);
+  box-shadow:0 8px 32px rgba(0,0,0,.5);z-index:9999;
+  transform:translateY(20px);opacity:0;transition:all .3s;pointer-events:none}
+.toast.show{transform:none;opacity:1}
+.toast.success{border-color:rgba(39,174,96,.5);color:var(--green)}
+.toast.error{border-color:rgba(192,57,43,.5);color:#e74c3c}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:500;
+  display:none;align-items:center;justify-content:center;backdrop-filter:blur(6px);padding:24px}
+.modal-overlay.open{display:flex}
+.modal-box{background:var(--bg3);border:1px solid var(--border);border-radius:12px;
+  width:100%;max-width:520px;overflow:hidden;animation:fadeUp .2s ease}
+.modal-head{display:flex;align-items:center;justify-content:space-between;
+  padding:16px 22px;border-bottom:1px solid var(--border2)}
+.modal-head h3{font-size:15px;font-weight:700}
+.modal-close{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;transition:color .2s}
+.modal-close:hover{color:var(--white)}
+.modal-body{padding:22px}
+.modal-foot{padding:16px 22px;border-top:1px solid var(--border2);display:flex;gap:10px;justify-content:flex-end}
+
+/* ── LOGIN ── */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.login-card{background:var(--bg3);border:1px solid var(--border);border-radius:14px;padding:40px;width:100%;max-width:400px;position:relative;overflow:hidden}
+.login-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--red),var(--gold))}
+.login-logo{display:flex;align-items:center;gap:10px;margin-bottom:28px}
+.login-title{font-family:'Roboto Condensed',sans-serif;font-size:20px;font-weight:700;margin-bottom:6px}
+.login-sub{font-size:13px;color:var(--text);font-weight:300;margin-bottom:28px}
+.login-role-tabs{display:flex;gap:8px;margin-bottom:24px}
+.role-tab{flex:1;padding:9px;border-radius:6px;border:1.5px solid var(--border2);
+  background:transparent;color:var(--text);font-family:'Roboto',sans-serif;font-size:12.5px;
+  font-weight:600;cursor:pointer;text-align:center;transition:all .18s}
+.role-tab.active{border-color:var(--gold);color:var(--gold);background:var(--gold-dim)}
+.login-hint{font-size:11px;color:var(--muted);text-align:center;margin-top:14px}
+.login-hint b{color:var(--gold)}
+
+/* ── INSPECTOR CARD ── */
+.insp-card{display:flex;align-items:center;gap:14px;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:16px 18px;margin-bottom:12px;cursor:pointer;transition:all .2s}
+.insp-card:hover{border-color:var(--border);background:var(--bg4)}
+.insp-card-icon{width:40px;height:40px;border-radius:50%;background:var(--gold-dim);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+.insp-card-info{flex:1}
+.insp-card-name{font-size:14px;font-weight:600;color:var(--white)}
+.insp-card-meta{font-size:12px;color:var(--muted);margin-top:2px}
+.insp-card-right{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+
+/* ── EMPTY STATE ── */
+.empty-state{text-align:center;padding:60px 24px;color:var(--muted)}
+.empty-icon{font-size:40px;margin-bottom:12px;opacity:.4}
+.empty-text{font-size:13px}
+
+/* ── PHOTO LIGHTBOX ── */
+.lightbox{position:fixed;inset:0;background:rgba(0,0,0,.95);z-index:800;display:none;align-items:center;justify-content:center}
+.lightbox.open{display:flex}
+.lightbox img{max-width:90vw;max-height:90vh;border-radius:8px;object-fit:contain}
+.lightbox-close{position:absolute;top:16px;right:16px;background:none;border:none;color:#fff;font-size:28px;cursor:pointer}
+
+/* responsive */
+@media(max-width:768px){
+  .sidebar{display:none}.stat-grid{grid-template-columns:1fr 1fr}
+  .checklist-layout{grid-template-columns:1fr}.section-nav{display:none}
+  .report-grid-2,.review-grid{grid-template-columns:1fr}.form-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════════════════════
+  SCREEN: LOGIN
+══════════════════════════════════════ -->
+<div id="screen-login" class="screen active">
+  <div class="login-wrap">
+    <div class="login-card fade-up">
+      <div class="login-logo">
+        <div class="tb-mark">AQ</div>
+        <div><div style="font-size:14px;font-weight:700;letter-spacing:.05em">ApexQ</div><div style="font-size:8px;color:var(--gold);letter-spacing:.12em;text-transform:uppercase">Inspector Portal</div></div>
+      </div>
+      <div class="login-title">Welcome back</div>
+      <div class="login-sub">Sign in to access your inspection dashboard</div>
+
+      <div class="login-role-tabs">
+        <button class="role-tab active" onclick="setRole('admin',this)">Admin</button>
+        <button class="role-tab" onclick="setRole('inspector',this)">Inspector</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="field">
+          <label>Email</label>
+          <input type="email" id="login-email" placeholder="admin@apexq.com"/>
+        </div>
+        <div class="field">
+          <label>Password</label>
+          <input type="password" id="login-pw" placeholder="••••••••"/>
+        </div>
+        <button class="btn btn-gold" style="width:100%;justify-content:center;margin-top:6px" onclick="doLogin()">Sign In →</button>
+      </div>
+
+      <div class="login-hint">
+        Demo — Admin: <b>admin@apexq.com</b> / <b>1234</b><br>
+        Inspector: <b>inspector@apexq.com</b> / <b>1234</b>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+  SCREEN: MAIN APP
+══════════════════════════════════════ -->
+<div id="screen-app" class="screen" style="flex-direction:column">
+  <!-- Topbar -->
+  <div class="topbar">
+    <div class="tb-logo" onclick="navigate('dashboard')">
+      <div class="tb-mark">AQ</div>
+      <div><span style="font-size:13px;font-weight:700;letter-spacing:.05em">ApexQ</span><span class="tb-sub">Inspector</span></div>
+    </div>
+    <div class="tb-right">
+      <div class="tb-user">
+        <div class="tb-avatar" id="tb-avatar">A</div>
+        <span id="tb-uname">Admin</span>
+      </div>
+      <span class="tb-badge admin-badge" id="tb-role-badge">Admin</span>
+      <button class="tb-logout" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <!-- Sidebar -->
+    <aside class="sidebar" id="sidebar">
+      <!-- Admin nav -->
+      <div id="admin-nav">
+        <div class="sb-group">Main</div>
+        <div class="sb-item active" onclick="navigate('dashboard')" id="nav-dashboard"><span class="sb-icon">⊞</span> Dashboard</div>
+        <div class="sb-item" onclick="navigate('inspections')" id="nav-inspections"><span class="sb-icon">📋</span> Inspections</div>
+        <div class="sb-item" onclick="navigate('create')" id="nav-create"><span class="sb-icon">＋</span> Create Inspection</div>
+        <div class="sb-divider"></div>
+        <div class="sb-group">Manage</div>
+        <div class="sb-item" onclick="navigate('inspectors')" id="nav-inspectors"><span class="sb-icon">👤</span> Inspectors</div>
+        <div class="sb-item" onclick="navigate('reports')" id="nav-reports"><span class="sb-icon">📊</span> Reports</div>
+      </div>
+      <!-- Inspector nav -->
+      <div id="inspector-nav" style="display:none">
+        <div class="sb-group">My Work</div>
+        <div class="sb-item active" onclick="navigate('dashboard')" id="nav-insp-dashboard"><span class="sb-icon">⊞</span> Dashboard</div>
+        <div class="sb-item" onclick="navigate('inspections')" id="nav-insp-inspections"><span class="sb-icon">📋</span> My Inspections</div>
+        <div class="sb-divider"></div>
+        <div class="sb-group">Reports</div>
+        <div class="sb-item" onclick="navigate('reports')" id="nav-insp-reports"><span class="sb-icon">📊</span> My Reports</div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+
+      <!-- ── DASHBOARD ── -->
+      <div class="page active" id="page-dashboard">
+        <div class="eyebrow">Overview</div>
+        <div class="page-title" id="dash-title">Admin Dashboard</div>
+        <div class="page-sub" id="dash-sub">Good morning — here's what's happening today.</div>
+
+        <div class="stat-grid" id="dash-stats">
+          <div class="stat-card"><div class="stat-icon">📋</div><div class="stat-num" id="st-total">4</div><div class="stat-label">Total Inspections</div></div>
+          <div class="stat-card"><div class="stat-icon">⏳</div><div class="stat-num" id="st-pending">2</div><div class="stat-label">Pending / Assigned</div></div>
+          <div class="stat-card"><div class="stat-icon">🔄</div><div class="stat-num" id="st-inprog">1</div><div class="stat-label">In Progress</div></div>
+          <div class="stat-card"><div class="stat-icon">✅</div><div class="stat-num" id="st-done">1</div><div class="stat-label">Completed</div></div>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+          <div style="font-size:14px;font-weight:600">Recent Inspections</div>
+          <button class="btn btn-gold btn-sm" onclick="navigate('create')" id="dash-create-btn">＋ Create Inspection</button>
+        </div>
+        <div id="dash-inspection-list"></div>
+      </div>
+
+      <!-- ── INSPECTIONS LIST ── -->
+      <div class="page" id="page-inspections">
+        <div class="eyebrow">All Inspections</div>
+        <div class="page-title">Inspection List</div>
+        <div class="page-sub">View and manage all active and completed inspections.</div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn btn-gold btn-sm" onclick="navigate('create')" id="list-create-btn">＋ New Inspection</button>
+        </div>
+        <div id="full-inspection-list"></div>
+      </div>
+
+      <!-- ── CREATE INSPECTION ── -->
+      <div class="page" id="page-create">
+        <div class="eyebrow">Admin</div>
+        <div class="page-title">Create Inspection</div>
+        <div class="page-sub">Fill in the inspection details. The inspector will receive an assignment notification.</div>
+        <div class="form-card">
+          <div class="form-grid">
+            <div class="field"><label>Client Name *</label><input id="f-client" placeholder="e.g. Heritage Exports Ltd."/></div>
+            <div class="field"><label>Supplier *</label><input id="f-supplier" placeholder="e.g. XYZ Factory"/></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>Factory / Location</label><input id="f-factory" placeholder="e.g. Factory Unit 3, Noida"/></div>
+            <div class="field"><label>Product *</label><input id="f-product" placeholder="e.g. Bra, Antique Chair…"/></div>
+          </div>
+          <div class="form-grid">
+            <div class="field"><label>PO Number</label><input id="f-po" placeholder="e.g. PO-2026-0042"/></div>
+            <div class="field"><label>Inspection Date *</label><input type="date" id="f-date"/></div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label>Assign Inspector *</label>
+              <select id="f-inspector">
+                <option value="">Select inspector…</option>
+                <option value="insp1">Rajan Mehta</option>
+                <option value="insp2">Sunita Patel</option>
+                <option value="insp3">Amit Sharma</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Inspection Template *</label>
+              <select id="f-template" onchange="previewTemplate()">
+                <option value="">Select template…</option>
+                <option value="bra">Bra PSI</option>
+                <option value="furniture">Furniture Inspection</option>
+                <option value="electronics">Electronics QC</option>
+                <option value="garment">Garment Final</option>
+              </select>
+            </div>
+          </div>
+          <div id="template-preview" style="display:none;background:var(--bg2);border:1px solid var(--border2);border-radius:7px;padding:14px;margin-bottom:16px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Template Sections</div>
+            <div id="template-sections" style="display:flex;gap:8px;flex-wrap:wrap"></div>
+          </div>
+          <button class="btn btn-gold" onclick="createInspection()">Create Inspection →</button>
+        </div>
+      </div>
+
+      <!-- ── INSPECTORS ── -->
+      <div class="page" id="page-inspectors">
+        <div class="eyebrow">Admin</div>
+        <div class="page-title">Manage Inspectors</div>
+        <div class="page-sub">View your inspection team and their current workload.</div>
+        <div style="display:flex;justify-content:flex-end;margin-bottom:16px">
+          <button class="btn btn-gold btn-sm" onclick="openAddInspectorModal()">＋ Add Inspector</button>
+        </div>
+        <div id="inspector-list"></div>
+      </div>
+
+      <!-- ── CHECKLIST ── -->
+      <div class="page" id="page-checklist">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <button class="btn btn-ghost btn-sm" onclick="navigate('inspections')" style="padding:0">← Back</button>
+          <div class="eyebrow" style="margin-bottom:0">Inspection Checklist</div>
+        </div>
+        <div class="page-title" id="cl-title">Inspection</div>
+        <div class="page-sub" id="cl-sub"></div>
+
+        <div class="progress-bar-wrap">
+          <div class="progress-label" id="prog-label">0 / 0 questions answered</div>
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="prog-fill" style="width:0%"></div></div>
+          <div class="progress-pct" id="prog-pct">0%</div>
+        </div>
+
+        <div class="checklist-layout">
+          <div class="section-nav">
+            <div class="section-nav-title">Sections</div>
+            <div id="section-nav-items"></div>
+          </div>
+          <div id="checklist-panels"></div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:8px">
+          <button class="btn btn-outline" onclick="saveProgress()">Save Progress</button>
+          <button class="btn btn-gold" onclick="goReview()">Review & Submit →</button>
+        </div>
+      </div>
+
+      <!-- ── REVIEW ── -->
+      <div class="page" id="page-review">
+        <button class="btn btn-ghost btn-sm" onclick="navigate('checklist')" style="padding:0;margin-bottom:12px">← Edit Checklist</button>
+        <div class="eyebrow">Step 2 of 2</div>
+        <div class="page-title">Review & Submit</div>
+        <div class="page-sub">Verify all responses before submitting. Missing items are highlighted.</div>
+        <div class="review-grid" id="review-grid"></div>
+        <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:20px;margin-bottom:20px">
+          <div class="field">
+            <label>Inspector's Final Remark</label>
+            <textarea id="final-remark" class="comment-input" style="min-height:80px;width:100%" placeholder="Overall observation, recommendations for the client…"></textarea>
+          </div>
+        </div>
+        <div style="display:flex;gap:12px">
+          <button class="btn btn-outline" onclick="navigate('checklist')">← Go Back</button>
+          <button class="btn btn-green" onclick="submitInspection()">✓ Submit Inspection</button>
+        </div>
+      </div>
+
+      <!-- ── REPORTS LIST ── -->
+      <div class="page" id="page-reports">
+        <div class="eyebrow">Reports</div>
+        <div class="page-title">Inspection Reports</div>
+        <div class="page-sub">Download or view completed inspection reports.</div>
+        <div id="reports-list"></div>
+      </div>
+
+      <!-- ── REPORT DETAIL ── -->
+      <div class="page" id="page-report-detail">
+        <button class="btn btn-ghost btn-sm" onclick="navigate('reports')" style="padding:0;margin-bottom:16px">← All Reports</button>
+        <div class="eyebrow">Report</div>
+        <div id="report-detail-content"></div>
+      </div>
+
+    </main>
+  </div>
+</div>
+
+<!-- ADD INSPECTOR MODAL -->
+<div class="modal-overlay" id="modal-add-inspector">
+  <div class="modal-box">
+    <div class="modal-head">
+      <h3>Add Inspector</h3>
+      <button class="modal-close" onclick="closeModal('modal-add-inspector')">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="display:flex;flex-direction:column;gap:14px">
+        <div class="field"><label>Full Name</label><input id="mi-name" placeholder="e.g. Priya Sharma"/></div>
+        <div class="field"><label>Email</label><input id="mi-email" type="email" placeholder="priya@apexq.com"/></div>
+        <div class="field"><label>Phone</label><input id="mi-phone" placeholder="+91 98765 43210"/></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('modal-add-inspector')">Cancel</button>
+      <button class="btn btn-gold btn-sm" onclick="addInspector()">Add Inspector</button>
+    </div>
+  </div>
+</div>
+
+<!-- PHOTO LIGHTBOX -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">✕</button>
+  <img id="lightbox-img" src="" alt="Photo"/>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ═══════════════════════════════════════
+   STATE & DATA
+═══════════════════════════════════════ */
+let currentUser = null;
+let currentPage = '';
+let activeInspectionId = null;
+let responses = {}; // { questionKey: { result, comment, photos[] } }
+
+const USERS = [
+  { id:'u1', name:'Arjun Kapoor', email:'admin@apexq.com', password:'1234', role:'admin', avatar:'AK' },
+  { id:'u2', name:'Rajan Mehta', email:'inspector@apexq.com', password:'1234', role:'inspector', avatar:'RM' }
+];
+
+const INSPECTORS = [
+  { id:'insp1', name:'Rajan Mehta', email:'rajan@apexq.com', phone:'+91 98765 43210', active:2 },
+  { id:'insp2', name:'Sunita Patel', email:'sunita@apexq.com', phone:'+91 87654 32109', active:1 },
+  { id:'insp3', name:'Amit Sharma', email:'amit@apexq.com', phone:'+91 76543 21098', active:0 },
+];
+
+const TEMPLATES = {
+  bra: {
+    name:'Bra PSI',
+    sections:[
+      { title:'Quantity', questions:[
+        { id:'q1', text:'Quantity matches PO?', photoRequired:true, commentRequired:false },
+        { id:'q2', text:'Units properly counted and verified?', photoRequired:false, commentRequired:true },
+      ]},
+      { title:'Workmanship', questions:[
+        { id:'q3', text:'Stitching quality acceptable?', photoRequired:true, commentRequired:true },
+        { id:'q4', text:'No loose threads or raw edges?', photoRequired:true, commentRequired:false },
+        { id:'q5', text:'Underwire properly encased?', photoRequired:false, commentRequired:false },
+      ]},
+      { title:'Measurement', questions:[
+        { id:'q6', text:'Band measurements match spec sheet?', photoRequired:true, commentRequired:true },
+        { id:'q7', text:'Cup size correct as per PO?', photoRequired:false, commentRequired:true },
+      ]},
+      { title:'Packaging', questions:[
+        { id:'q8', text:'Packaging matches approved sample?', photoRequired:true, commentRequired:false },
+        { id:'q9', text:'Labels and barcodes correct?', photoRequired:true, commentRequired:false },
+        { id:'q10', text:'Carton markings correct?', photoRequired:false, commentRequired:true },
+      ]},
+    ]
+  },
+  furniture: {
+    name:'Furniture Inspection',
+    sections:[
+      { title:'Visual', questions:[
+        { id:'q1', text:'Surface finish acceptable?', photoRequired:true, commentRequired:false },
+        { id:'q2', text:'No visible cracks or chips?', photoRequired:true, commentRequired:true },
+      ]},
+      { title:'Structural', questions:[
+        { id:'q3', text:'All joints tight and secure?', photoRequired:false, commentRequired:false },
+        { id:'q4', text:'Item stable on flat surface?', photoRequired:false, commentRequired:false },
+      ]},
+      { title:'Packaging', questions:[
+        { id:'q5', text:'Adequate protective packaging?', photoRequired:true, commentRequired:false },
+      ]},
+    ]
+  },
+  electronics:{
+    name:'Electronics QC',
+    sections:[
+      { title:'Physical', questions:[
+        { id:'q1', text:'No physical damage to unit?', photoRequired:true, commentRequired:false },
+        { id:'q2', text:'All ports and buttons present?', photoRequired:true, commentRequired:false },
+      ]},
+      { title:'Functional', questions:[
+        { id:'q3', text:'Unit powers on correctly?', photoRequired:false, commentRequired:true },
+        { id:'q4', text:'All functions tested and working?', photoRequired:false, commentRequired:true },
+      ]},
+      { title:'Labelling', questions:[
+        { id:'q5', text:'CE / regulatory marks present?', photoRequired:true, commentRequired:false },
+        { id:'q6', text:'Serial number matches records?', photoRequired:true, commentRequired:false },
+      ]},
+    ]
+  },
+  garment:{
+    name:'Garment Final',
+    sections:[
+      { title:'Workmanship', questions:[
+        { id:'q1', text:'No sewing defects present?', photoRequired:true, commentRequired:false },
+        { id:'q2', text:'Color matches approved swatch?', photoRequired:true, commentRequired:true },
+      ]},
+      { title:'Measurements', questions:[
+        { id:'q3', text:'All measurements within tolerance?', photoRequired:false, commentRequired:true },
+      ]},
+      { title:'Packaging', questions:[
+        { id:'q4', text:'Hangtags and labels correct?', photoRequired:true, commentRequired:false },
+        { id:'q5', text:'Folding/packing to standard?', photoRequired:false, commentRequired:false },
+      ]},
+    ]
+  }
+};
+
+let INSPECTIONS = [
+  { id:'ins1', clientName:'Heritage Exports', supplier:'XYZ Factory', factory:'Unit 3, Noida', product:'Bra', poNumber:'PO-2026-001', inspectionDate:'2026-07-01', status:'in_progress', assignedInspector:'insp1', templateId:'bra', createdAt:'2026-06-20' },
+  { id:'ins2', clientName:'Global Buyers Inc', supplier:'ABC Garments', factory:'Okhla Phase 2', product:'Garment', poNumber:'PO-2026-002', inspectionDate:'2026-07-05', status:'assigned', assignedInspector:'insp2', templateId:'garment', createdAt:'2026-06-21' },
+  { id:'ins3', clientName:'EuroHome GmbH', supplier:'Delhi Furniture', factory:'Wazirpur', product:'Antique Chair', poNumber:'PO-2026-003', inspectionDate:'2026-06-25', status:'completed', assignedInspector:'insp1', templateId:'furniture', createdAt:'2026-06-18' },
+  { id:'ins4', clientName:'TechTrade Ltd', supplier:'Sector 63 Electronics', factory:'Noida SEZ', product:'Smart Speaker', poNumber:'PO-2026-004', inspectionDate:'2026-07-10', status:'draft', assignedInspector:'insp3', templateId:'electronics', createdAt:'2026-06-22' },
+];
+
+let REPORTS = [
+  { id:'rep1', inspectionId:'ins3', generatedAt:'2026-06-25T14:30:00', verdict:'PASS', passCount:4, failCount:1, totalQuestions:5, remark:'Overall quality acceptable. Minor finish issue on left rear leg noted. Approved for shipment with advisory to client.', photos:[] }
+];
+
+/* ═══════════════════════════════════════
+   LOGIN
+═══════════════════════════════════════ */
+let selectedRole = 'admin';
+function setRole(role, el) {
+  selectedRole = role;
+  document.querySelectorAll('.role-tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('login-email').value = role==='admin' ? 'admin@apexq.com' : 'inspector@apexq.com';
+  document.getElementById('login-pw').value = '1234';
+}
+document.getElementById('login-email').value = 'admin@apexq.com';
+document.getElementById('login-pw').value = '1234';
+
+function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pw = document.getElementById('login-pw').value.trim();
+  const user = USERS.find(u=>u.email===email && u.password===pw);
+  if(!user){ showToast('Invalid credentials','error'); return; }
+  currentUser = user;
+  showScreen('app');
+  setupForRole(user.role);
+  navigate('dashboard');
+  showToast('Welcome back, '+user.name.split(' ')[0]+'!','success');
+}
+
+function doLogout() {
+  currentUser = null; responses = {}; activeInspectionId = null;
+  showScreen('login');
+}
+
+function setupForRole(role) {
+  document.getElementById('tb-avatar').textContent = currentUser.avatar;
+  document.getElementById('tb-uname').textContent = currentUser.name.split(' ')[0];
+  const badge = document.getElementById('tb-role-badge');
+  badge.textContent = role==='admin'?'Admin':'Inspector';
+  badge.className = 'tb-badge '+(role==='admin'?'admin-badge':'insp-badge');
+  document.getElementById('admin-nav').style.display = role==='admin'?'block':'none';
+  document.getElementById('inspector-nav').style.display = role==='inspector'?'block':'none';
+}
+
+/* ═══════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════ */
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+}
+
+function navigate(page) {
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+page).classList.add('active');
+  document.querySelectorAll('.sb-item').forEach(s=>s.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+page) || document.getElementById('nav-insp-'+page);
+  if(navEl) navEl.classList.add('active');
+  currentPage = page;
+
+  if(page==='dashboard') renderDashboard();
+  if(page==='inspections') renderInspectionList();
+  if(page==='inspectors') renderInspectors();
+  if(page==='reports') renderReports();
+  if(page==='create') {
+    document.getElementById('f-date').value = new Date().toISOString().split('T')[0];
+    // hide create button for inspector
+    const cb1 = document.getElementById('dash-create-btn');
+    const cb2 = document.getElementById('list-create-btn');
+    if(currentUser?.role==='inspector'){ if(cb1)cb1.style.display='none'; if(cb2)cb2.style.display='none'; }
+  }
+  window.scrollTo(0,0);
+}
+
+/* ═══════════════════════════════════════
+   DASHBOARD
+═══════════════════════════════════════ */
+function renderDashboard() {
+  const isAdmin = currentUser.role==='admin';
+  document.getElementById('dash-title').textContent = isAdmin ? 'Admin Dashboard' : 'My Inspections';
+  document.getElementById('dash-sub').textContent = isAdmin
+    ? 'Welcome back — here\'s a live overview of all inspections.'
+    : 'Your assigned inspections and progress.';
+  document.getElementById('dash-create-btn').style.display = isAdmin?'':'none';
+
+  const myInsp = isAdmin ? INSPECTIONS : INSPECTIONS.filter(i=>i.assignedInspector===currentUser.id);
+
+  document.getElementById('st-total').textContent = myInsp.length;
+  document.getElementById('st-pending').textContent = myInsp.filter(i=>i.status==='draft'||i.status==='assigned').length;
+  document.getElementById('st-inprog').textContent = myInsp.filter(i=>i.status==='in_progress').length;
+  document.getElementById('st-done').textContent = myInsp.filter(i=>i.status==='completed').length;
+
+  document.getElementById('dash-inspection-list').innerHTML = renderInspectionTable(myInsp.slice(0,4));
+}
+
+/* ═══════════════════════════════════════
+   INSPECTION LIST
+═══════════════════════════════════════ */
+function renderInspectionList() {
+  const isAdmin = currentUser.role==='admin';
+  const list = isAdmin ? INSPECTIONS : INSPECTIONS.filter(i=>i.assignedInspector===currentUser.id);
+  document.getElementById('full-inspection-list').innerHTML = renderInspectionTable(list);
+  document.getElementById('list-create-btn').style.display = isAdmin?'':'none';
+}
+
+function renderInspectionTable(list) {
+  if(!list.length) return '<div class="empty-state"><div class="empty-icon">📋</div><div class="empty-text">No inspections yet</div></div>';
+  const rows = list.map(ins=>`
+    <div class="table-row" onclick="openInspection('${ins.id}')">
+      <div class="td white col-1">${ins.product}<div style="font-size:11px;color:var(--muted);font-weight:300;margin-top:2px">${ins.clientName} · ${ins.poNumber}</div></div>
+      <div class="td col-2" style="font-size:12px">${ins.supplier}<div style="font-size:11px;color:var(--muted)">${ins.factory}</div></div>
+      <div class="td col-3" style="font-size:12px">${ins.inspectionDate}</div>
+      <div class="td col-4"><span class="pill ${ins.status}">${statusLabel(ins.status)}</span></div>
+      <div class="td col-5"><button class="btn btn-outline btn-sm" onclick="event.stopPropagation();openInspection('${ins.id}')">${ins.status==='completed'?'View Report':'Open →'}</button></div>
+    </div>
+  `).join('');
+  return `
+    <div class="table-wrap">
+      <div class="table-head">
+        <div class="th col-1">Product / Client</div>
+        <div class="th col-2">Supplier / Factory</div>
+        <div class="th col-3">Date</div>
+        <div class="th col-4">Status</div>
+        <div class="th col-5">Action</div>
+      </div>
+      ${rows}
+    </div>`;
+}
+
+function statusLabel(s){ return {draft:'Draft',assigned:'Assigned',in_progress:'In Progress',completed:'Completed'}[s]||s }
+
+function openInspection(id) {
+  const ins = INSPECTIONS.find(i=>i.id===id);
+  if(!ins) return;
+  if(ins.status==='completed') { openReport(REPORTS.find(r=>r.inspectionId===id)); return; }
+  activeInspectionId = id;
+  responses = {};
+  loadChecklist(ins);
+  navigate('checklist');
+}
+
+/* ═══════════════════════════════════════
+   CHECKLIST
+═══════════════════════════════════════ */
+function loadChecklist(ins) {
+  const tmpl = TEMPLATES[ins.templateId];
+  if(!tmpl) return;
+
+  document.getElementById('cl-title').textContent = ins.product + ' Inspection';
+  document.getElementById('cl-sub').textContent = ins.clientName + ' · ' + ins.supplier + ' · ' + ins.inspectionDate;
+
+  // Update status to in_progress
+  ins.status = 'in_progress';
+
+  // Section nav
+  const navEl = document.getElementById('section-nav-items');
+  navEl.innerHTML = tmpl.sections.map((s,i)=>`
+    <div class="sec-nav-item ${i===0?'active':''}" id="snav-${i}" onclick="scrollToSection(${i})">
+      <div class="sec-dot" id="sdot-${i}"></div>
+      ${s.title}
+    </div>`).join('');
+
+  // Panels
+  const panelsEl = document.getElementById('checklist-panels');
+  panelsEl.innerHTML = tmpl.sections.map((sec,si)=>`
+    <div class="section-panel" id="spanel-${si}">
+      <div class="section-panel-title">${sec.title}</div>
+      ${sec.questions.map((q,qi)=>`
+        <div class="q-card" id="qcard-${si}-${qi}">
+          <div class="q-text">${q.text} ${q.photoRequired||q.commentRequired?'<span class="req-tag">required</span>':''}</div>
+          <div class="pass-fail">
+            <button class="pf-btn pass-opt" onclick="setResult('${si}-${qi}','pass',this)">✓ Pass</button>
+            <button class="pf-btn fail-opt" onclick="setResult('${si}-${qi}','fail',this)">✗ Fail</button>
+          </div>
+          <div class="q-meta">
+            ${q.photoRequired||true ? `
+            <label class="photo-upload-btn">
+              <input type="file" accept="image/*" multiple onchange="handleQPhoto(event,'${si}-${qi}')"/>
+              📷 Upload Photo
+            </label>` : ''}
+            <input class="comment-input" placeholder="Add comment…" oninput="setComment('${si}-${qi}',this.value)" id="comment-${si}-${qi}"/>
+          </div>
+          <div class="thumb-wrap" id="thumbs-${si}-${qi}"></div>
+        </div>
+      `).join('')}
+    </div>`).join('');
+
+  updateProgress();
+}
+
+function scrollToSection(i) {
+  document.querySelectorAll('.sec-nav-item').forEach(n=>n.classList.remove('active'));
+  document.getElementById('snav-'+i)?.classList.add('active');
+  document.getElementById('spanel-'+i)?.scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function setResult(key, val, btn) {
+  if(!responses[key]) responses[key]={result:null,comment:'',photos:[]};
+  responses[key].result = val;
+  const card = btn.closest('.pass-fail');
+  card.querySelectorAll('.pf-btn').forEach(b=>{b.className='pf-btn '+(b.classList.contains('pass-opt')?'pass-opt':'fail-opt')});
+  btn.classList.add(val==='pass'?'sel-pass':'sel-fail');
+  updateProgress();
+}
+
+function setComment(key, val) {
+  if(!responses[key]) responses[key]={result:null,comment:'',photos:[]};
+  responses[key].comment = val;
+}
+
+function handleQPhoto(e, key) {
+  if(!responses[key]) responses[key]={result:null,comment:'',photos:[]};
+  const files = Array.from(e.target.files);
+  const thumbsEl = document.getElementById('thumbs-'+key);
+  files.forEach(f=>{
+    const r = new FileReader();
+    r.onload = ev => {
+      responses[key].photos.push(ev.target.result);
+      const img = document.createElement('img');
+      img.src = ev.target.result; img.className='thumb';
+      img.onclick = ()=>openLightbox(ev.target.result);
+      thumbsEl.appendChild(img);
+    };
+    r.readAsDataURL(f);
+  });
+}
+
+function updateProgress() {
+  const ins = INSPECTIONS.find(i=>i.id===activeInspectionId);
+  if(!ins) return;
+  const tmpl = TEMPLATES[ins.templateId];
+  let total=0, answered=0;
+  tmpl.sections.forEach((sec,si)=>{
+    sec.questions.forEach((q,qi)=>{
+      total++;
+      const r = responses[`${si}-${qi}`];
+      if(r && r.result) answered++;
+    });
+    // Update section dot
+    const secDone = sec.questions.every((_,qi)=>{
+      const r=responses[`${si}-${qi}`]; return r&&r.result;
+    });
+    const dot = document.getElementById('sdot-'+si);
+    if(dot){ dot.style.background = secDone?'var(--green)':''; dot.style.borderColor = secDone?'var(--green)':''; }
+    const navItem = document.getElementById('snav-'+si);
+    if(navItem){ if(secDone) navItem.classList.add('done'); else navItem.classList.remove('done'); }
+  });
+  const pct = total>0 ? Math.round(answered/total*100) : 0;
+  document.getElementById('prog-fill').style.width = pct+'%';
+  document.getElementById('prog-pct').textContent = pct+'%';
+  document.getElementById('prog-label').textContent = `${answered} / ${total} questions answered`;
+}
+
+function saveProgress() { showToast('Progress saved','success'); }
+
+function goReview() {
+  const ins = INSPECTIONS.find(i=>i.id===activeInspectionId);
+  const tmpl = TEMPLATES[ins.templateId];
+  const grid = document.getElementById('review-grid');
+  const items = [];
+  tmpl.sections.forEach((sec,si)=>{
+    sec.questions.forEach((q,qi)=>{
+      const r = responses[`${si}-${qi}`];
+      const status = !r||!r.result ? 'pending' : r.result;
+      items.push(`
+        <div class="review-item">
+          <div class="ri-icon">${status==='pass'?'✅':status==='fail'?'❌':'⏳'}</div>
+          <div>
+            <div class="ri-section">${sec.title}</div>
+            <div class="ri-q">${q.text}</div>
+          </div>
+          <span class="ri-status ${status==='pass'?'ri-pass':status==='fail'?'ri-fail':'ri-pending'}">${status==='pass'?'Pass':status==='fail'?'Fail':'Pending'}</span>
+        </div>`);
+    });
+  });
+  grid.innerHTML = items.join('');
+  navigate('review');
+}
+
+/* ═══════════════════════════════════════
+   SUBMIT
+═══════════════════════════════════════ */
+function submitInspection() {
+  const ins = INSPECTIONS.find(i=>i.id===activeInspectionId);
+  const tmpl = TEMPLATES[ins.templateId];
+  let passCount=0, failCount=0, total=0;
+  let allPhotos = [];
+  tmpl.sections.forEach((sec,si)=>{
+    sec.questions.forEach((q,qi)=>{
+      total++;
+      const r = responses[`${si}-${qi}`];
+      if(r?.result==='pass') passCount++;
+      if(r?.result==='fail') failCount++;
+      if(r?.photos) allPhotos.push(...r.photos);
+    });
+  });
+  const verdict = failCount===0 ? 'PASS' : failCount<=Math.floor(total*0.2) ? 'PASS' : 'FAIL';
+  const remark = document.getElementById('final-remark').value || 'No remarks added.';
+  const rep = {
+    id:'rep'+Date.now(), inspectionId:ins.id,
+    generatedAt:new Date().toISOString(),
+    verdict, passCount, failCount, totalQuestions:total, remark, photos:allPhotos
+  };
+  REPORTS.push(rep);
+  ins.status = 'completed';
+  showToast('Inspection submitted successfully!','success');
+  setTimeout(()=>{ openReport(rep); }, 600);
+}
+
+/* ═══════════════════════════════════════
+   REPORTS
+═══════════════════════════════════════ */
+function renderReports() {
+  const myReports = currentUser.role==='admin'
+    ? REPORTS
+    : REPORTS.filter(r=>{ const ins=INSPECTIONS.find(i=>i.id===r.inspectionId); return ins?.assignedInspector===currentUser.id; });
+
+  if(!myReports.length){
+    document.getElementById('reports-list').innerHTML = '<div class="empty-state"><div class="empty-icon">📊</div><div class="empty-text">No reports yet</div></div>';
+    return;
+  }
+  document.getElementById('reports-list').innerHTML = myReports.map(rep=>{
+    const ins = INSPECTIONS.find(i=>i.id===rep.inspectionId);
+    return `
+    <div class="insp-card" onclick="openReport(${JSON.stringify(rep).replace(/"/g,'&quot;')})">
+      <div class="insp-card-icon">${rep.verdict==='PASS'?'✅':'❌'}</div>
+      <div class="insp-card-info">
+        <div class="insp-card-name">${ins?.product||'Inspection'} — ${ins?.clientName||''}</div>
+        <div class="insp-card-meta">${ins?.supplier||''} · ${new Date(rep.generatedAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'})}</div>
+      </div>
+      <div class="insp-card-right">
+        <span class="pill ${rep.verdict==='PASS'?'completed':'draft'}">${rep.verdict}</span>
+        <span style="font-size:11px;color:var(--muted)">${rep.passCount}P / ${rep.failCount}F of ${rep.totalQuestions}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function openReport(rep) {
+  if(!rep) return;
+  const ins = INSPECTIONS.find(i=>i.id===rep.inspectionId);
+  const inspector = INSPECTORS.find(i=>i.id===ins?.assignedInspector);
+  const pct = Math.round(rep.passCount/rep.totalQuestions*100);
+
+  const photosHtml = rep.photos.length
+    ? `<div class="report-block" style="margin-bottom:18px"><h4>Photo Evidence (${rep.photos.length} photos)</h4>
+        <div class="report-photos" style="margin-top:10px">${rep.photos.map(p=>`<img src="${p}" class="report-photo" onclick="openLightbox('${p}')"/>`).join('')}</div>
+       </div>` : '';
+
+  document.getElementById('report-detail-content').innerHTML = `
+    <div class="page-title">${ins?.product||'Inspection'} Report</div>
+    <div class="page-sub" style="margin-bottom:20px">${ins?.clientName} · ${ins?.supplier} · Ref: ${ins?.poNumber}</div>
+
+    <div class="verdict-card ${rep.verdict==='PASS'?'pass':'fail'}">
+      <div class="verdict-icon">${rep.verdict==='PASS'?'✅':'❌'}</div>
+      <div class="verdict-text ${rep.verdict==='PASS'?'pass':'fail'}">${rep.verdict}</div>
+      <div class="verdict-sub">${rep.passCount} of ${rep.totalQuestions} checks passed · ${pct}% pass rate</div>
+    </div>
+
+    <div class="report-grid-2">
+      <div class="report-block">
+        <h4>Inspection Details</h4>
+        <div class="r-row"><span class="r-key">Client</span><span class="r-val">${ins?.clientName||'—'}</span></div>
+        <div class="r-row"><span class="r-key">Supplier</span><span class="r-val">${ins?.supplier||'—'}</span></div>
+        <div class="r-row"><span class="r-key">Factory</span><span class="r-val">${ins?.factory||'—'}</span></div>
+        <div class="r-row"><span class="r-key">Product</span><span class="r-val">${ins?.product||'—'}</span></div>
+        <div class="r-row"><span class="r-key">PO Number</span><span class="r-val">${ins?.poNumber||'—'}</span></div>
+        <div class="r-row"><span class="r-key">Date</span><span class="r-val">${ins?.inspectionDate||'—'}</span></div>
+      </div>
+      <div class="report-block">
+        <h4>Results Summary</h4>
+        <div class="r-row"><span class="r-key">Total Checks</span><span class="r-val">${rep.totalQuestions}</span></div>
+        <div class="r-row"><span class="r-key">Passed</span><span class="r-val" style="color:var(--green)">✓ ${rep.passCount}</span></div>
+        <div class="r-row"><span class="r-key">Failed</span><span class="r-val" style="color:#e74c3c">✗ ${rep.failCount}</span></div>
+        <div class="r-row"><span class="r-key">Pass Rate</span><span class="r-val">${pct}%</span></div>
+        <div class="r-row"><span class="r-key">Inspector</span><span class="r-val">${inspector?.name||'—'}</span></div>
+        <div class="r-row"><span class="r-key">Generated</span><span class="r-val">${new Date(rep.generatedAt).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>
+      </div>
+    </div>
+
+    ${photosHtml}
+
+    <div class="report-block" style="margin-bottom:18px">
+      <h4>Inspector's Remark</h4>
+      <p style="font-size:13.5px;color:var(--text);line-height:1.75;font-weight:300;margin-top:8px">${rep.remark}</p>
+    </div>
+
+    <div style="display:flex;gap:12px;flex-wrap:wrap">
+      <button class="btn btn-gold" onclick="downloadReport()">⬇ Download PDF</button>
+      <button class="btn btn-outline" onclick="navigate('reports')">← All Reports</button>
+    </div>`;
+
+  navigate('report-detail');
+}
+
+function downloadReport() {
+  showToast('Preparing PDF… (connect pdfkit backend to enable)','success');
+}
+
+/* ═══════════════════════════════════════
+   CREATE INSPECTION
+═══════════════════════════════════════ */
+function previewTemplate() {
+  const val = document.getElementById('f-template').value;
+  const tmpl = TEMPLATES[val];
+  const wrap = document.getElementById('template-preview');
+  if(!tmpl){ wrap.style.display='none'; return; }
+  wrap.style.display='block';
+  document.getElementById('template-sections').innerHTML = tmpl.sections.map(s=>`
+    <span style="font-size:11px;font-weight:600;color:var(--gold);background:var(--gold-dim);border:1px solid var(--border);border-radius:20px;padding:4px 12px">${s.title}</span>
+  `).join('');
+}
+
+function createInspection() {
+  const client = document.getElementById('f-client').value.trim();
+  const supplier = document.getElementById('f-supplier').value.trim();
+  const product = document.getElementById('f-product').value.trim();
+  const date = document.getElementById('f-date').value;
+  const insp = document.getElementById('f-inspector').value;
+  const tmpl = document.getElementById('f-template').value;
+  if(!client||!supplier||!product||!date||!insp||!tmpl){
+    showToast('Please fill in all required fields','error'); return;
+  }
+  const newIns = {
+    id:'ins'+Date.now(),
+    clientName:client, supplier, factory:document.getElementById('f-factory').value||'—',
+    product, poNumber:document.getElementById('f-po').value||'PO-TBD',
+    inspectionDate:date, status:'assigned', assignedInspector:insp,
+    templateId:tmpl, createdBy:currentUser.id, createdAt:new Date().toISOString()
+  };
+  INSPECTIONS.unshift(newIns);
+  // reset form
+  ['f-client','f-supplier','f-factory','f-product','f-po'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('f-inspector').value=''; document.getElementById('f-template').value='';
+  document.getElementById('template-preview').style.display='none';
+  showToast('Inspection created and assigned!','success');
+  setTimeout(()=>navigate('inspections'),600);
+}
+
+/* ═══════════════════════════════════════
+   INSPECTORS
+═══════════════════════════════════════ */
+function renderInspectors() {
+  document.getElementById('inspector-list').innerHTML = INSPECTORS.map(ins=>`
+    <div class="insp-card">
+      <div class="insp-card-icon">👤</div>
+      <div class="insp-card-info">
+        <div class="insp-card-name">${ins.name}</div>
+        <div class="insp-card-meta">${ins.email} · ${ins.phone}</div>
+      </div>
+      <div class="insp-card-right">
+        <span class="pill ${ins.active>0?'in_progress':'completed'}">${ins.active} Active</span>
+        <span style="font-size:11px;color:var(--muted)">${ins.active} inspections</span>
+      </div>
+    </div>`).join('');
+}
+
+function openAddInspectorModal() {
+  document.getElementById('modal-add-inspector').classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+function addInspector() {
+  const name = document.getElementById('mi-name').value.trim();
+  const email = document.getElementById('mi-email').value.trim();
+  const phone = document.getElementById('mi-phone').value.trim();
+  if(!name||!email){ showToast('Name and email required','error'); return; }
+  INSPECTORS.push({ id:'insp'+Date.now(), name, email, phone, active:0 });
+  closeModal('modal-add-inspector');
+  renderInspectors();
+  showToast('Inspector added!','success');
+  ['mi-name','mi-email','mi-phone'].forEach(id=>document.getElementById(id).value='');
+}
+
+/* ═══════════════════════════════════════
+   UTILITIES
+═══════════════════════════════════════ */
+function showToast(msg, type='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.className = 'toast '+(type||''); t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2800);
+}
+
+function openLightbox(src) {
+  document.getElementById('lightbox-img').src = src;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+}
+
+// Close modals on outside click
+document.getElementById('modal-add-inspector').addEventListener('click', e=>{
+  if(e.target===e.currentTarget) closeModal('modal-add-inspector');
+});
+
+// Enter to login
+document.getElementById('login-pw').addEventListener('keydown', e=>{ if(e.key==='Enter') doLogin(); });
+</script>
+</body>
+</html>
